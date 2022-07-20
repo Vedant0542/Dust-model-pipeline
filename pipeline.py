@@ -22,15 +22,12 @@ p0 = 0.22
 p = 0.25
 f = 0.75
 
-
-
 def AtoB(alm):
-    blm = alm
+    blm = np.zeros(alm.shape, dtype = complex)
     blm[0] = t * alm[0]
     blm[1] = alm[1] + p * alm[0]
     blm[2] = p0 * f * alm[2] / p
     return blm
-
 
 # In[268]:
 
@@ -46,7 +43,7 @@ def do_projection(B, Bdims='sp'):
 
 # In[269]:
 
-
+nside = 256
 lmax = 3 * nside - 1
 ell = np.arange(lmax + 1)
 npix = hp.nside2npix(nside)
@@ -107,13 +104,8 @@ def make_dustsim_new(dustMap, l0=70 * d2r, b0=24 * d2r, p0=0.25, alphaM=-2.5, fM
 
 
 
-
-dust_sim = make_dustsim_new(dust_map)
-
-
-
 import pysm3 as pysm
-import pysm.units as u
+import pysm3.units as u
 
 def freq_scaling(inmap, infreq, outfreq):
     sky = pysm.Sky(nside=nside, preset_strings=["d0"])
@@ -128,10 +120,6 @@ def freq_scaling(inmap, infreq, outfreq):
     outmap = outmap.value
 
     return outmap
-
-
-
-model_f353_map = freq_scaling(dust_sim, 545, 353)
 
 
 def CtoD(cl, lmax):
@@ -149,9 +137,38 @@ def averaging(start, end, dl):
    
    
    
-def Vasyngel_update(map):
-   alm = hp.map2alm(map)
-   blm = AtoB(alm)
-   new_map = p.alm2map(blm, nside)
-   return new_map
+def Vasyngel_update(m, nside):
+    alm = hp.map2alm(m)
+    blm = AtoB(alm)
+    new_map = hp.alm2map(blm, nside)
+    return new_map
    
+def singleplot(cl):
+    l = np.arange(cl.shape[-1])
+    pl.figure(figsize=(6,4.5))
+    pl.loglog(l,l*(l+1)/2/np.pi*cl[0],label = "TT")
+    pl.loglog(l,l*(l+1)/2/np.pi*cl[1],label = "EE")
+    pl.loglog(l,l*(l+1)/2/np.pi*cl[2],label = "BB")
+    #pl.loglog(l,l*(l+1)/2/np.pi*cl[3], label = "TE")
+    pl.legend(fontsize=14)
+    #ax.set_xlabel('Multipole moment $\ell$',fontsize=14)
+    
+def doubleplot(bincl_cross, bincl_v):
+    b = np.arange(bincl_v.shape[-1])
+    pl.figure(figsize=(24,4.5))
+    ax=pl.subplot(1,4,1)
+    pl.loglog(b,bincl_cross[0],label = "TT_real")
+    pl.loglog(b,bincl_v[0],label = "TT")
+    pl.legend(fontsize=14)
+    ax=pl.subplot(1,4,2)
+    pl.loglog(b,bincl_cross[1],label = "EE_real")
+    pl.loglog(b,bincl_v[1],label = "EE")
+    pl.legend(fontsize=14)
+    ax=pl.subplot(1,4,3)
+    pl.loglog(b,bincl_cross[2],label = "BB_real")
+    pl.loglog(b,bincl_v[2],label = "BB")
+    pl.legend(fontsize=14)
+    ax=pl.subplot(1,4,4)
+    pl.loglog(b,bincl_cross[3],label = "TE_real")
+    pl.loglog(b,bincl_v[3],label = "TE")
+    pl.legend(fontsize=14)
